@@ -1,27 +1,25 @@
+# MODIFYING DIRECTLY FOR ADVANCE USERS
 FROM alpine:latest
+LABEL container="ContainerLabel"
 RUN apk update
 RUN apk upgrade --available && sync
-RUN apk --no-cache add nano curl jq bind-tools wget tree tmux ca-certificates
+RUN apk --no-cache add bash curl wget jq ca-certificates
 RUN apk --no-cache add pdns pdns-backend-sqlite3
 
 # ENV
 ENV STEPPATH=/app/step-ca
 ENV STEPCA_INIT=/app/step-ca/config/ca.json
 ENV STEPCA_SECRET_FILE=/app/step-ca/.secret
-ENV STEPCA_SECRET="Super-Secret-KEY!-ChangeImmedi@telY"
-ENV STEPCA_NAME="name"
-ENV STEPCA_PROVISIONER="provisioner"
-ENV STEPCA_ISSUER_PROVISIONER="issuer provisioner"
-ENV STEPCA_CA_SERVER_URI="ca.example.org"
-
-
+ENV STEPCA_SECRET="SuperSecret"
+ENV STEPCA_ORGANIZATION="Example Org"
+ENV STEPCA_PROVISIONER="provisioneremail"
+ENV STEPCA_CA_DOMAIN="domain.tld"
 ENV PDNSPATH=/app/pdns
+ENV PDNS_CONF=/etc/pdns/pdns.conf
 ENV PDNS_SQL_SCHEMA=/app/pdns/schema.sql
 ENV PDNS_DB_TABLE=/app/pdns/pdns_db.sqlite
-
-ENV PDNS_WEBSERVER_PASSWORD="adminPassword"
-ENV PDNS_API_KEY="apikey1234"
-
+ENV PDNS_WEBSERVER_PASSWORD="WebAdminPWD"
+ENV PDNS_API_KEY="ApiKEYpdns"
 
 # INSTALL PowerDNS
 RUN mkdir -p /app/pdns
@@ -36,7 +34,7 @@ RUN mkdir -p /var/empty/var/run
 # INSTALL STEPCA
 RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
 RUN apk update
-RUN apk add step-cli step-certificates
+RUN apk --no-cache add step-cli step-certificates
 RUN mkdir -p /app/step-ca
 
 # EXPOSE PORTS FOR EXTERNAL ACCESS
