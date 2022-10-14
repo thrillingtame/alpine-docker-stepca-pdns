@@ -2,8 +2,10 @@
 set -m
 # Initialize PDNS
 if [[ ! -f ${PDNS_DB_TABLE} ]]; then
-	echo "<< 🤓 Applying PDNS WebServer Port >>"
+	echo "<< 🤓 Modifying PDNS Configuration >>"
 	sed -i "s/#webserver-port=8081/webserver-port=${PDNS_PORT}/" /etc/pdns/pdns.conf
+	sed -i "s/#webserver-password=/webserver-password=${PDNS_WEBSERVER_PASSWORD}/" /etc/pdns/pdns.conf
+	sed -i "s/#api-key=/api-key=${PDNS_API_KEY}/" /etc/pdns/pdns.conf
 	echo "<< 😑 Creating database schema.. 😑>>"
 	sqlite3 ${PDNS_DB_TABLE} < ${PDNS_SQL_SCHEMA}
 	chmod 755 -R ${PDNS_DB_TABLE}
@@ -45,19 +47,18 @@ else
 	echo "<< 😎 STEP-CA Ready! 😎 >>"
 fi
 
-# RUN Services
 
+# RUN Services
 echo "<< 🫥 Running PDNS and placing into background 🫥>>"
-pdns_server \
-	--loglevel="0" \
-	--webserver-allow-from="${PDNS_WEBSERVER_ALLOWED_FROM}" \
-	--webserver-password="${PDNS_WEBSERVER_PASSWORD}" \
-	--api-key="${PDNS_API_KEY}" &
+pdns_server --webserver-allow-from="${PDNS_WEBSERVER_ALLOWED_FROM}" &
+
+# Give time and space for PDNS to start
 sleep 3
+echo ""
+echo ""
 
 echo "<< 🫥 Running Step-CA and placing into background 🫥>>"
-step-ca \
-	--password-file=${STEPCA_SECRET_FILE} ${STEPCA_INIT} &
+step-ca	--password-file=${STEPCA_SECRET_FILE} ${STEPCA_INIT} &
 
 # Give time and space for Step-CA to start
 sleep 3
@@ -80,6 +81,4 @@ curl https://${STEPCA_CA_SERVER_URI}:${STEPCA_PORT}/health
 
 echo "<< 🎉 Container is running normally! 🏁>>"
 echo "<< 🫡Now bringing up Step-CA process in the foreground... 🫡>>"
-
-
 fg %2
