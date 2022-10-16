@@ -3,7 +3,7 @@ FROM alpine:latest
 LABEL container="ContainerLabel"
 RUN apk update
 RUN apk upgrade --available && sync
-RUN apk --no-cache add bash curl wget jq ca-certificates
+RUN apk --no-cache add bash nano bind-tools curl wget jq ca-certificates
 RUN apk --no-cache add pdns pdns-backend-sqlite3
 
 # ENV
@@ -20,6 +20,7 @@ ENV PDNS_SQL_SCHEMA=/app/pdns/schema.sql
 ENV PDNS_DB_TABLE=/app/pdns/pdns_db.sqlite
 ENV PDNS_WEBSERVER_PASSWORD="WebAdminPWD"
 ENV PDNS_API_KEY="ApiKEYpdns"
+ENV EDITOR="nano"
 
 # INSTALL PowerDNS
 RUN mkdir -p /app/pdns
@@ -38,8 +39,8 @@ RUN apk --no-cache add step-cli step-certificates
 RUN mkdir -p /app/step-ca
 
 # EXPOSE PORTS FOR EXTERNAL ACCESS
-# Container's localhost should only be the one allowed to listen!
-ENV PDNS_WEBSERVER_ALLOWED_FROM="127.0.0.1"
+# PDNS API Webserver Access. Set to your LAN subnet to limit access!
+ENV PDNS_WEBSERVER_ALLOWED_FROM="0.0.0.0/0"
 # PDNS DNS 53 *ADVANCE USE ONLY!
 # EXPOSE 53
 

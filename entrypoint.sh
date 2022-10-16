@@ -6,6 +6,7 @@ if [[ ! -f ${PDNS_DB_TABLE} ]]; then
 	echo "<< 🤓		Modifying PDNS Configuration... >>"
 	sed -i "s/#webserver-port=8081/webserver-port=${PDNS_PORT}/" ${PDNS_CONF}
 	sed -i "s/#webserver-password=/webserver-password=${PDNS_WEBSERVER_PASSWORD}/" ${PDNS_CONF}
+	sed -i "s/#webserver-allow-from=127.0.0.1/webserver-allow-from=${PDNS_WEBSERVER_ALLOWED_FROM}/" ${PDNS_CONF}
 	sed -i "s/#api-key=/api-key=${PDNS_API_KEY}/" ${PDNS_CONF}
 	echo ""
 	echo "<< 😑		Creating database schema... >>"
@@ -68,7 +69,7 @@ if [[ ! -f /app/.initialized ]]; then
 	# First time run services in background
 	echo ""
 	echo "<< 🫥		Running Services and placing into background...	>>"
-	nohup pdns_server --webserver-allow-from="${PDNS_WEBSERVER_ALLOWED_FROM}" &
+	pdns_server &
 	step-ca	--password-file=${STEPCA_SECRET_FILE} "${STEPCA_INIT}" &>/dev/null &
 
 	# Give time for Step-CA to start
@@ -86,15 +87,26 @@ if [[ ! -f /app/.initialized ]]; then
 	echo "<< 👁		Trusting ${STEPCA_PROVISIONER} inside the container! >>"
 	update-ca-certificates &>/dev/null
 	echo ""
-	echo "<< 🫣		Restarting Step-CA to Apply changes and Check health status >>"
+	echo "<< 🫣		Restarting Step-CA to Apply changes >>"
 	echo ""
 	kill %2
 	sleep 3
 	step-ca	--password-file=${STEPCA_SECRET_FILE} "${STEPCA_INIT}" &
+	echo ""
+	echo "<< 🫣		Check Step-CA health status via CURL >>"
 	sleep 3
 	curl -s https://ca.${STEPCA_CA_DOMAIN}:${STEPCA_PORT}/health
 	echo ""
+	echo "<< 🫣		Check PDNS health status via DIG >>"
+	echo ""
+	dig chaos txt version.bind @127.0.0.1 +short
+	echo ""
 	echo "<< 🎉		Container is running normally! >>"
+	echo ""
+	echo "<< 🎉		Creating our 1st zone >>"
+	pdnsutil create-zone ${STEPCA_CA_DOMAIN}
+	pdnsutil set-kind ${STEPCA_CA_DOMAIN} native
+	pdnsutil add-record ${STEPCA_CA_DOMAIN} test ca $(hostname -i)
 	echo ""
 	echo "<< 🏁		Now bringing up Step-CA process in the foreground...>>"
 	echo ""
@@ -105,7 +117,7 @@ if [[ ! -f /app/.initialized ]]; then
 	fg %3
 else
 	echo "<< 🫥		Running Services and placing into background...	>>"
-	nohup pdns_server --webserver-allow-from="${PDNS_WEBSERVER_ALLOWED_FROM}" &
+	pdns_server &
 	step-ca	--password-file=${STEPCA_SECRET_FILE} "${STEPCA_INIT}" &>/dev/null &
 	# Give time for Step-CA to start
 	sleep 3
